@@ -24,7 +24,7 @@ def add_new_tea(tea:Tea):
     teas.append(tea)
     return {"success":True,"data":f"{tea} is added"}
 
-@app.put("/teas/{tea_id}/update")
+@app.put("/teas/{tea_id}/update",description="This will update the teas list")
 def update_tea(tea_id:int,tea:Tea):
     for index, tea in enumerate(teas):
         if tea.id == tea_id:
@@ -33,7 +33,7 @@ def update_tea(tea_id:int,tea:Tea):
     return {"success":False,"error":"Tea not found"}
 
 
-@app.delete("/teas/delete/{tea_id}")
+@app.delete("/teas/delete/{tea_id}",description="This will perform a delete operation on teas list")
 def delete_tea(tea_id:int):
     for index,tea in enumerate(teas):
         if tea.id == tea_id:
