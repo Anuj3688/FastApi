@@ -1,14 +1,8 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 from typing import List
+from models import Tea
 
 app = FastAPI()
-
-class Tea(BaseModel):
-    id: int
-    name: str
-    origin: str
-
 teas: List[Tea] = []
 
 @app.get("/")
