@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from crud.crud import Crud
+from models.FactoryStocks import FactoryStocks
 from models.Tea import Tea
 
 crud_operation = Crud()
@@ -13,6 +14,15 @@ def get_root():
 @app.get("/teas")
 def get_all_teas():
     response = crud_operation.get_all_tea()
+    return response
+
+@app.get("/factory")
+def get_all_factory():
+    response = crud_operation.get_all_factory()
+    return response
+@app.post("/Factory/add",description="Need to add factory name and product details")
+def add_new_factory(factory:FactoryStocks):
+    response = crud_operation.add_factory_details(factory)
     return response
 
 @app.post("/teas/add")
