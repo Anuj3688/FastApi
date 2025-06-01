@@ -1,42 +1,18 @@
 from fastapi import FastAPI
-from crud.crud import Crud
-from models.FactoryStocks import FactoryStocks
-from models.Tea import Tea
+from routers import factory, tea
+app = FastAPI(
+    title="TeaHub Service",
+    description="Manage teas with origin, price, and inventory via RESTful API.",
+    version="1.0.0"
+)
 
-crud_operation = Crud()
-
-app = FastAPI()
+app.include_router(tea.router)
+app.include_router(factory.router)
 
 @app.get("/")
 def get_root():
     return { "message": "Let's Start learning! Jai Shree Ram" }
 
-@app.get("/teas")
-def get_all_teas():
-    response = crud_operation.get_all_tea()
-    return response
 
-@app.get("/factory")
-def get_all_factory():
-    response = crud_operation.get_all_factory()
-    return response
-@app.post("/Factory/add",description="Need to add factory name and product details")
-def add_new_factory(factory:FactoryStocks):
-    response = crud_operation.add_factory_details(factory)
-    return response
 
-@app.post("/teas/add")
-def add_new_tea(tea:Tea):
-    message = crud_operation.add_new_tea(tea)
-    return {"success":True,"data":message}
-
-@app.put("/teas/{tea_id}/update",description="This will update the teas list")
-def update_tea(tea_id:int,tea:Tea):
-    response = crud_operation.update_tea(tea)
-    return response
-
-@app.delete("/teas/delete/{tea_id}",description="This will perform a delete operation on teas list")
-def delete_tea(tea_id:int):
-    response = crud_operation.remove_tea(tea_id)
-    return response
 

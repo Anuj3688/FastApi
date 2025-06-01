@@ -1,10 +1,12 @@
-import uuid
 
 from handler.log_handler import log_handler
 from models import Tea
+from handler.config import logger
 from db import database
 from models.FactoryStocks import FactoryStocks
 from models.Response import GenericResponse
+from models.Tea import Tea
+import uuid
 
 
 class Crud:
@@ -16,15 +18,34 @@ class Crud:
         try:
             connection = self.db_calls.create_connection()
             cursor = connection.cursor()
+            tea_id = None
+            if tea.id:
+                try:
+                    tea_uuid = uuid.UUID(str(tea.id))  # Validate UUID format
+                except (ValueError, AttributeError) as e:
+                    logger.error("Expecting tea_id to be in uuid format",e)
+                    tea_uuid = str(uuid.uuid4())
+
+                cursor.execute("SELECT 1 FROM TEA_HUB WHERE id = ?", (str(tea_uuid),))
+                exists = cursor.fetchone()
+                if exists:
+                    tea_id = str(tea_uuid)  # Use existing ID
+                else:
+                    tea_id = str(uuid.uuid4())  # Not found, generate new UUID
+            else:
+                tea_id = str(uuid.uuid4())  # No ID provided, generate new UUID
+
             cursor.execute(
                 "INSERT INTO TEA_HUB (id, name, origin, price) VALUES (?, ?, ?, ?)",
-                (tea.id, tea.name, tea.origin, tea.price)
+                (str(tea_id), tea.name, tea.origin, tea.price)
             )
             connection.commit()
             connection.close()
-            return GenericResponse(success=True, data={"message": f"{tea} added successfully."})
+            return GenericResponse(success=True, data={"message": f"{tea} added successfully.", "id": tea_id})
         except Exception as e:
             return GenericResponse(success=False, error=str(e))
+
+
 
     @log_handler
     def remove_tea(self, tea_id: int) -> GenericResponse:
@@ -41,7 +62,6 @@ class Crud:
     @log_handler
     def get_all_tea(self) -> GenericResponse:
         try:
-            print("executing get_all_tea")
             connection = self.db_calls.create_connection()
             cursor = connection.cursor()
             cursor.execute("SELECT id, name, origin, price FROM TEA_HUB")
@@ -50,6 +70,7 @@ class Crud:
             teas = [Tea(id=row[0], name=row[1], origin=row[2], price=row[3]) for row in rows]
             return GenericResponse(success=True, data={"teas": teas})
         except Exception as e:
+            logger.error(f"Error occurred while fetching tea records: {str(e)}", exc_info=True)
             return GenericResponse(success=False, error=str(e))
 
     def get_tea_from_id(self, tea_id: int) -> GenericResponse:
