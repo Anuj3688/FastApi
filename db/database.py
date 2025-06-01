@@ -45,7 +45,6 @@ class Database:
     @log_handler
     def create_connection(self):
         connection = sqlite3.connect(self.database_name)
-        print(connection)
         return connection
 
 if __name__ == '__main__':

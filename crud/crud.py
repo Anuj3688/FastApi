@@ -1,4 +1,3 @@
-
 from handler.log_handler import log_handler
 from models import Tea
 from handler.config import logger
@@ -18,12 +17,11 @@ class Crud:
         try:
             connection = self.db_calls.create_connection()
             cursor = connection.cursor()
-            tea_id = None
             if tea.id:
                 try:
                     tea_uuid = uuid.UUID(str(tea.id))  # Validate UUID format
                 except (ValueError, AttributeError) as e:
-                    logger.error("Expecting tea_id to be in uuid format",e)
+                    logger.error("Expecting tea_id to be in uuid format", e)
                     tea_uuid = str(uuid.uuid4())
 
                 cursor.execute("SELECT 1 FROM TEA_HUB WHERE id = ?", (str(tea_uuid),))
@@ -44,8 +42,6 @@ class Crud:
             return GenericResponse(success=True, data={"message": f"{tea} added successfully.", "id": tea_id})
         except Exception as e:
             return GenericResponse(success=False, error=str(e))
-
-
 
     @log_handler
     def remove_tea(self, tea_id: int) -> GenericResponse:
@@ -73,7 +69,8 @@ class Crud:
             logger.error(f"Error occurred while fetching tea records: {str(e)}", exc_info=True)
             return GenericResponse(success=False, error=str(e))
 
-    def get_tea_from_id(self, tea_id: int) -> GenericResponse:
+    @log_handler
+    def get_tea_from_id(self, tea_id: uuid.UUID) -> GenericResponse:
         try:
             connection = self.db_calls.create_connection()
             cursor = connection.cursor()
@@ -112,7 +109,9 @@ class Crud:
     def tea_validation(self, tea: Tea):
         value = self.get_tea_from_id(tea.id)
         if value.success:
+            logger.info("Found tea in databse")
             return True
+        return False
 
     @log_handler
     def add_factory_details(self, factory: FactoryStocks):
@@ -122,8 +121,8 @@ class Crud:
             cursor = connection.cursor()
             if self.tea_validation(factory.tea_details):
                 cursor.execute(
-                    "INSERT INTO FACTORY_HUB (factory_id,factory_name, tea_id, quantity, price) VALUES (?, ?, ?, ?)",
-                    (factory_id, factory.factory_name, factory.tea_details.id, factory.quantity, factory.price)
+                    "INSERT INTO FACTORY_HUB (factory_id,factory_name, tea_id, quantity, price) VALUES (?, ?, ?, ?,?)",
+                    (str(factory_id), factory.factory_name, factory.tea_details.id, factory.quantity, factory.price)
                 )
                 connection.commit()
                 connection.close()
@@ -131,10 +130,10 @@ class Crud:
                 return GenericResponse(success=True,
                                        data={"message": f"{factory} added successfully.", "factory_id": factory_id})
             else:
-                return GenericResponse(success=False, data={"errorMessage":"Tea should be listed before adding factory details"})
+                return GenericResponse(success=False,
+                                       data={"errorMessage": "Tea should be listed before adding factory details"})
         except Exception as e:
             return GenericResponse(success=False, error=str(e))
-
 
     def get_all_factory(self):
         try:
@@ -143,7 +142,18 @@ class Crud:
             cursor.execute("SELECT  factory_id,factory_name, tea_id, quantity, price FROM FACTORY_HUB")
             rows = cursor.fetchall()
             connection.close()
-            teas = [FactoryStocks(factory_id=row[0],factory_name=row[1], tea_id=row[2], quantity=row[3], price=row[4]) for row in rows]
-            return GenericResponse(success=True, data={"teas": teas})
+            factory = []
+            for row in rows:
+                val: Tea = self.get_tea_from_id(row[2]).data
+                value = val.get('tea')
+                tea = Tea(id=value.id, name=value.name, origin=value.origin, price=value.price)
+                logger.info(f"got {tea}")
+                factory.append(
+                    FactoryStocks(factory_id=row[0], factory_name=row[1],
+                                  tea_details=tea, quantity=row[3],
+                                  price=row[4]
+                                  ))
+
+            return GenericResponse(success=True, data={"teas": factory})
         except Exception as e:
             return GenericResponse(success=False, error=str(e))

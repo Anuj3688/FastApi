@@ -12,4 +12,4 @@ class FactoryStocks(BaseModel):
     @computed_field
     @property
     def total_value(self) -> float:
-        return self.prize*self.quantity
+        return self.price*self.quantity
