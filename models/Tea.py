@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from uuid import UUID
 from typing import Optional,Union
 
@@ -8,7 +8,7 @@ class Tea(BaseModel):
     origin: str
     price:int = Field(...,ge=100)
 
-    @validator('name')
+    @field_validator('name')
     def name_validation(cls, v):
         if len(v) < 4:
             raise ValueError("name should be more than 4 char")

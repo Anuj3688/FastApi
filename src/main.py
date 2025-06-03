@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import factory, tea
+from routers import factory, tea, bulk_handling
 app = FastAPI(
     title="TeaHub Service",
     description="Manage teas with origin, price, and inventory via RESTful API.",
@@ -8,6 +8,7 @@ app = FastAPI(
 
 app.include_router(tea.router)
 app.include_router(factory.router)
+app.include_router(bulk_handling.router)
 
 @app.get("/")
 def get_root():

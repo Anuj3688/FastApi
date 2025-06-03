@@ -1,17 +1,40 @@
 from handler.log_handler import log_handler
 from models import Tea
+from fastapi import HTTPException
 from handler.config import logger
 from db import database
 from models.FactoryStocks import FactoryStocks
 from models.Response import GenericResponse
 from models.Tea import Tea
 import uuid
+import csv
 
 
 class Crud:
     def __init__(self):
         self.db_calls = database.Database()
 
+    @log_handler
+    def add_tea_in_bulk(self,contents):
+        try:
+            decoded = contents.decode('utf-8').splitlines()
+            reader = csv.DictReader(decoded)
+            teas = []
+
+            for row in reader:
+                tea = Tea(
+                    id=str(uuid.uuid4()) if not row.get("id") else row["id"],
+                    name=row["name"],
+                    origin=row["origin"],
+                    price=int(row["price"])
+                )
+                self.add_new_tea(tea)
+                teas.append(tea)
+
+            return {"message": f"{len(teas)} teas uploaded successfully."}
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
     @log_handler
     def add_new_tea(self, tea: Tea) -> GenericResponse:
         try:
@@ -27,11 +50,11 @@ class Crud:
                 cursor.execute("SELECT 1 FROM TEA_HUB WHERE id = ?", (str(tea_uuid),))
                 exists = cursor.fetchone()
                 if exists:
-                    tea_id = str(tea_uuid)  # Use existing ID
+                    tea_id = str(tea_uuid)
                 else:
-                    tea_id = str(uuid.uuid4())  # Not found, generate new UUID
+                    tea_id = str(uuid.uuid4())
             else:
-                tea_id = str(uuid.uuid4())  # No ID provided, generate new UUID
+                tea_id = str(uuid.uuid4())
 
             cursor.execute(
                 "INSERT INTO TEA_HUB (id, name, origin, price) VALUES (?, ?, ?, ?)",
